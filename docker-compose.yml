@@ -2,26 +2,41 @@ version: '3.8'
  
 services:
 
-  # Backend API
-  smart-brain-api:
-    container_name: backend
-    build: ./
-    command: npm start
-    working_dir: /usr/src/smart-brain-api
-    environment: 
-      POSTGRES_URI: postgres://sally:secret@postgres:5432/smart-brain-docker
-    ports: #port forwarding of computer to container
-      - '3000:3000'
-    volumes: #volumne allow changes to map from your computer to container
-      - ./:/usr/src/smart-brain-api
-
-  # Postgres
+  # PostgreSQL
   postgres:
-    environment: 
-      POSTGRES_USER: sally
-      POSTGRES_PASSWORD: secret
-      POSTGRES_DB: smart-brain-docker
-      POSTGRES_HOST: postgres
+    container_name: postgres
     build: ./postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: smart-brain
+      POSTGRES_HOST: postgres
     ports:
       - "5431:5432"
+
+  # Redis
+  redis:
+    container_name: redis
+    image: redis
+    ports:
+      - "6379:6379"
+
+  # Backend
+  smart-brain-api:
+    # env_file:
+    #   - ./.private/api-keys.env "Another way to insert env variables"
+    container_name: backend
+    build: ./
+    volumes:
+      - ./:/usr/src/smart-brain-api
+    command: npm start
+    working_dir: /usr/src/smart-brain-api
+    ports:
+      - "3000:3000"
+    environment:
+      POSTGRES_URI: postgres://admin:password@postgres:5432/smart-brain
+      REDIS_URI: redis://redis:6379
+    # Heads up! Docker has updated this feature and now you don't need to define the links property in order for things to work - https://docs.docker.com/compose/networking/
+    # links:
+    #   - postgres
+    #   - redis
